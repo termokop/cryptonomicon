@@ -164,6 +164,18 @@ export default {
     }
   },
   methods: {
+    subcr_updates(tickerName) {
+      setInterval(async() => {
+          const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029`)
+          const data = await f.json();
+          this.tickers.find(t => t.name === tickerName).price = 
+            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2)
+
+          if(this.selected?.name === tickerName) {
+            this.graph.push(data.USD)
+          }
+        }, 5000)
+    },
     add() {
       const isExist = this.tickers.filter(el => el.name === this.ticker)
       if(isExist.length) {
@@ -176,17 +188,12 @@ export default {
           name: this.ticker,
           price: '-',
         }
-        this.tickers.push(currentTicker)
-        setInterval(async() => {
-          const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029`)
-          const data = await f.json();
-          this.tickers.find(t => t.name === currentTicker.name).price = 
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2)
 
-          if(this.selected?.name === currentTicker.name) {
-            this.graph.push(data.USD)
-          }
-        }, 5000)
+        this.tickers.push(currentTicker)
+
+        localStorage.setItem('coins_list', JSON.stringify(this.tickers))
+
+        this.subcr_updates(currentTicker.name) 
         this.ticker = ''
         this.hints = []
       }
@@ -225,7 +232,16 @@ export default {
       )
     },
   },
+  beforeMount() {
+
+  },
   mounted() {
+    if(localStorage.getItem('coins_list')) {
+      this.tickers = JSON.parse(localStorage.getItem('coins_list'))
+      this.tickers.forEach(ticker => {
+        this.subcr_updates(ticker.name)
+      })
+    }
     const takeCoinList = async() => {
       this.isShowLoader = true
       const f = await fetch(`https://min-api.cryptocompare.com/data/all/coinlist?summary=true`)
