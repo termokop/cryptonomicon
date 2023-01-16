@@ -60,6 +60,7 @@
       </button>
     </section>
     <template v-if="tickers.length">
+      <hr class="w-full border-t border-gray-600 my-4" />
       <div>
         <button 
           v-if="page>1"
@@ -86,7 +87,7 @@
       <hr class="w-full border-t border-gray-600 my-4" />
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div 
-          v-for="t in filteredTickers()" 
+          v-for="t in paginatedTickers" 
           :key="t"
           @click="select(t)"
           :class="{
@@ -130,7 +131,7 @@
       </h3>
       <div class="flex items-end border-gray-600 border-b border-l h-64">
         <div
-          v-for="(bar, index) in normalize_graph()"
+          v-for="(bar, index) in normalizedGraph"
           :key="index"
           :style="{height: `${bar}%`}"
           class="bg-purple-800 border w-10"
@@ -186,21 +187,9 @@ export default {
       hints: [],
       page: 1,
       filter: "",
-      hasNextPage: true,
     }
   },
   methods: {
-    filteredTickers() {
-      const start = (this.page-1) * 6
-      const end = this.page * 6
-      const filteredTickers =  this.tickers.filter(ticker =>
-        ticker.name.includes(this.filter)
-      )
-
-      this.hasNextPage = filteredTickers.length > end
-
-      return filteredTickers.slice(start, end)
-    },
     subcr_updates(tickerName) {
       setInterval(async() => {
           const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029`)
@@ -226,10 +215,8 @@ export default {
           price: '-',
         }
 
-        this.tickers.push(currentTicker)
+        this.tickers = [...this.tickers, currentTicker]
         this.filter = ""
-
-        localStorage.setItem('coins_list', JSON.stringify(this.tickers))
 
         this.subcr_updates(currentTicker.name) 
         this.ticker = ''
@@ -243,7 +230,6 @@ export default {
     },
     select(t) {
       this.selected = t
-      this.graph = []
     },
     choose_hint(hint) {
       this.ticker = hint
@@ -263,20 +249,55 @@ export default {
       })
       if(this.ticker === '') this.hints = []
     },
-    normalize_graph() {
+
+  },
+  computed: {
+    startIndex() {
+      return (this.page-1) * 6
+    },
+    endIndex() {
+      return this.page * 6
+    },
+
+    filteredTickers() {
+      return  this.tickers.filter(ticker => ticker.name.includes(this.filter))
+    },
+    paginatedTickers() {
+      return this.filteredTickers.slice(this.startIndex, this.endIndex)
+    },
+    
+    hasNextPage() {
+      return this.filteredTickers.length > this.endIndex
+    },
+    normalizedGraph() {
       const maxPrice = Math.max(...this.graph)
       const minPrice = Math.min(...this.graph)
+
+      if(minPrice === maxPrice) return this.graph.map(() => 50)
+
       return this.graph.map(
         currentPrice => 5 + ((currentPrice - minPrice) * 95) / (maxPrice - minPrice) 
       )
     },
+    pageStateOptions() {
+      return {
+        filter: this.filter,
+        page: this.page
+      }
+    }
   },
   created() {
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     )
-    if(windowData.filter) this.filter = windowData.filter
-    if(windowData.page) this.page = windowData.page
+
+    const VALID_KEYS = ["filter", "page"]
+
+    VALID_KEYS.forEach(key => {
+      if(windowData[key]) this[key] = windowData[key]
+    })
+    // if(windowData.filter) this.filter = windowData.filter
+    // if(windowData.page) this.page = windowData.page
 
     if(localStorage.getItem('coins_list')) {
       this.tickers = JSON.parse(localStorage.getItem('coins_list'))
@@ -297,20 +318,24 @@ export default {
 
   },
   watch: {
-    filter() {
-      this.filter = this.filter.toUpperCase()
-      this.page = 1
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      )
+    tickers() {
+      localStorage.setItem('coins_list', JSON.stringify(this.tickers))
     },
-    page() {
+    selected() {
+      this.graph = []
+    },
+    paginatedTickers() {
+      if(this.paginatedTickers.length === 0 && this.page > 1) this.page -= 1
+    },
+    filter() {
+      this.page = 1
+      this.filter = this.filter.toUpperCase()
+    },
+    pageStateOptions(v) {
       window.history.pushState(
         null,
         document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+        `${window.location.pathname}?filter=${v.filter}&page=${v.page}`
       )
     }
   }
