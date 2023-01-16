@@ -60,10 +60,33 @@
       </button>
     </section>
     <template v-if="tickers.length">
+      <div>
+        <button 
+          v-if="page>1"
+          @click="page = page - 1"
+          class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+          Назад
+        </button>
+        <button 
+          v-if="hasNextPage"
+          @click="page = +page + 1"
+          class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+          Вперед
+        </button>
+        <div>
+          Фильтр: 
+          <input 
+            type="text"
+            v-model="filter"
+            >
+        </div>
+      </div>
       <hr class="w-full border-t border-gray-600 my-4" />
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div 
-          v-for="t in tickers" 
+          v-for="t in filteredTickers()" 
           :key="t"
           @click="select(t)"
           :class="{
@@ -160,10 +183,24 @@ export default {
       tickers: [],
       graph: [],
       coin_list: [],
-      hints: []
+      hints: [],
+      page: 1,
+      filter: "",
+      hasNextPage: true,
     }
   },
   methods: {
+    filteredTickers() {
+      const start = (this.page-1) * 6
+      const end = this.page * 6
+      const filteredTickers =  this.tickers.filter(ticker =>
+        ticker.name.includes(this.filter)
+      )
+
+      this.hasNextPage = filteredTickers.length > end
+
+      return filteredTickers.slice(start, end)
+    },
     subcr_updates(tickerName) {
       setInterval(async() => {
           const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029`)
@@ -190,6 +227,7 @@ export default {
         }
 
         this.tickers.push(currentTicker)
+        this.filter = ""
 
         localStorage.setItem('coins_list', JSON.stringify(this.tickers))
 
@@ -200,6 +238,7 @@ export default {
     },
     remove(t) {
       this.tickers = this.tickers.filter(el=> { return t !== el})
+      localStorage.setItem('coins_list',JSON.stringify(this.tickers))
       if(this.selected === t) this.selected = null
     },
     select(t) {
@@ -232,10 +271,13 @@ export default {
       )
     },
   },
-  beforeMount() {
+  created() {
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    )
+    if(windowData.filter) this.filter = windowData.filter
+    if(windowData.page) this.page = windowData.page
 
-  },
-  mounted() {
     if(localStorage.getItem('coins_list')) {
       this.tickers = JSON.parse(localStorage.getItem('coins_list'))
       this.tickers.forEach(ticker => {
@@ -250,6 +292,27 @@ export default {
       this.isShowLoader = false
     }
     takeCoinList()
+  },
+  mounted() {
+
+  },
+  watch: {
+    filter() {
+      this.filter = this.filter.toUpperCase()
+      this.page = 1
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      )
+    },
+    page() {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      )
+    }
   }
 }
 </script>
