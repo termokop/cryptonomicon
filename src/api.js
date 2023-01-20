@@ -1,81 +1,30 @@
-const API_KEY = '8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029'
+let tickersHandlers = new Map()
 
-const tickersHandlers = new Map()
+let copiedData = 'a'
 
-const socket = new WebSocket(
-    `wss://streamer.cryptocompare.com/v2?api_key=${API_KEY}`
-)
+let sharedWorker = new SharedWorker('./worker.js');
+sharedWorker.port.onmessage = function(e) { 
+if(e.data.newPrice === copiedData.newPrice && e.data.currency === copiedData.currency) return
 
-const AGREGATE_INDEX = "5"
+console.log("compire", copiedData, e.data)
 
-//sharedWorker----------------------------------
+ copiedData = e.data
 
-let worker = new SharedWorker("worker.js");
-let port = worker.port;
-port.start();
-port.onmessage = (e) => {
-    console.log( e.data.counter);
-}
-
-
-function incrementCounter(msg) {
-    port.postMessage(msg);
-    console.log(msg)
-  }
-
-//sharedWorker----------------------------------
-
-socket.addEventListener("message", e => {
-    const {TYPE: type, FROMSYMBOL: currency, PRICE: newPrice} = JSON.parse(e.data)
-    if(type !== AGREGATE_INDEX || newPrice === undefined) return
-    
-    
-    const handlers = tickersHandlers.get(currency) ?? []
-    handlers.forEach(fn => fn(newPrice))
-
-    incrementCounter(JSON.parse(e.data).PRICE) //sharedWorker----------------------------------
-})
+    const handlers = tickersHandlers.get(e.data.currency) ?? []
+    handlers.forEach(fn => fn(e.data.newPrice))
+};
 
 
 
 
-function sendToWs(message) {
-    const stringifiedMsg = JSON.stringify(message)
-    if(socket.readyState === WebSocket.OPEN) {
-        socket.send(stringifiedMsg)
-        return
-    }
-
-    socket.addEventListener(
-        "open",
-        () => {
-            socket.send(stringifiedMsg)
-        },
-        {once: true}
-    )
-}
-
-function subscribeToTickerOnWs(ticker) {
-    sendToWs({
-        action: "SubAdd",
-        subs: [`5~CCCAGG~${ticker}~USD`]
-    })
-}
-
-function ussubscribeFromTickerOnWs(ticker) {
-    sendToWs({
-        action: "SubRemove",
-        subs: [`5~CCCAGG~${ticker}~USD`]
-    })
-}
 
 export const subscribeToTicker = (ticker,cb) => {
     const subscribers = tickersHandlers.get(ticker) || []
     tickersHandlers.set(ticker, [...subscribers, cb])
-    subscribeToTickerOnWs(ticker)
+    sharedWorker.port.postMessage({ticker: ticker, act: "subcribe"});
 }
 
-export const unsubscribeFromTicker = /*(*/ticker /*, cb)*/ => {
-    tickersHandlers.delete(ticker)
-    ussubscribeFromTickerOnWs(ticker)
-}
+ export const unsubscribeFromTicker = ticker => {
+     tickersHandlers.delete(ticker)
+    sharedWorker.port.postMessage({ticker: ticker, act: "unsubcribe"});
+ }
