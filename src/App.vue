@@ -100,7 +100,7 @@
               {{t.name}} - USD
             </dt>
             <dd class="mt-1 text-3xl font-semibold text-gray-900">
-              {{t.price}}
+              {{formatPrice(t.price)}}
             </dd>
           </div>
           <div class="w-full border-t border-gray-200"></div>
@@ -173,6 +173,8 @@
 
 <script>
 
+import {subscribeToTicker, unsubscribeFromTicker } from './api'
+
 export default {
   name: 'App',
   data() {
@@ -190,17 +192,28 @@ export default {
     }
   },
   methods: {
-    subcr_updates(tickerName) {
-      setInterval(async() => {
-          const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=8da79cd40fb7a8762461b051c4b477dba4041a0130ab156a165a2f8655661029`)
-          const data = await f.json();
-          this.tickers.find(t => t.name === tickerName).price = 
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2)
+    updateTicker(tickerName, price) {
+      this.tickers
+      .filter(t => t.name === tickerName)  
+      .forEach(t => {
+          t.price = price
+        })
+    }, 
+    formatPrice(price) {
+      if(price === "-") return price
+      return price > 1 ? price.toFixed(2) : price.toPrecision(2)
+    },
 
-          if(this.selected?.name === tickerName) {
-            this.graph.push(data.USD)
-          }
-        }, 5000)
+    async updateTickers() {
+      // if(!this.tickers.length) return
+
+      // const exchangeData = await loadTickers(this.tickers.map(t => t.name))
+
+      // this.tickers.forEach(ticker => {
+      //   const price = exchangeData[ticker.name.toUpperCase()] //-------------------------------- чи потрібен цей код?!
+
+      //   ticker.price = price ?? "-"
+      // })
     },
     add() {
       const isExist = this.tickers.filter(el => el.name === this.ticker)
@@ -217,8 +230,9 @@ export default {
 
         this.tickers = [...this.tickers, currentTicker]
         this.filter = ""
+        subscribeToTicker(currentTicker.name, newPrice => 
+        this.updateTicker(currentTicker.name, newPrice))
 
-        this.subcr_updates(currentTicker.name) 
         this.ticker = ''
         this.hints = []
       }
@@ -227,6 +241,7 @@ export default {
       this.tickers = this.tickers.filter(el=> { return t !== el})
       localStorage.setItem('coins_list',JSON.stringify(this.tickers))
       if(this.selected === t) this.selected = null
+      unsubscribeFromTicker(t.name)
     },
     select(t) {
       this.selected = t
@@ -302,9 +317,11 @@ export default {
     if(localStorage.getItem('coins_list')) {
       this.tickers = JSON.parse(localStorage.getItem('coins_list'))
       this.tickers.forEach(ticker => {
-        this.subcr_updates(ticker.name)
+        subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice))
       })
     }
+    setInterval(this.updateTickers, 5000)
+
     const takeCoinList = async() => {
       this.isShowLoader = true
       const f = await fetch(`https://min-api.cryptocompare.com/data/all/coinlist?summary=true`)
