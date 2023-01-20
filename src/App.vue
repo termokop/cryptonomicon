@@ -1,5 +1,4 @@
 <template>
-  
 <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
   <div v-if="isShowLoader" class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center">
     <svg class="animate-spin -ml-1 mr-3 h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -175,6 +174,7 @@
 
 import {subscribeToTicker, unsubscribeFromTicker } from './api'
 
+
 export default {
   name: 'App',
   data() {
@@ -189,9 +189,14 @@ export default {
       hints: [],
       page: 1,
       filter: "",
+
+      worker: null,
+      port: null,
+      counter: 0
     }
   },
   methods: {
+
     updateTicker(tickerName, price) {
       this.tickers
       .filter(t => t.name === tickerName)  
@@ -305,6 +310,9 @@ export default {
     }
   },
   created() {
+
+
+
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     )

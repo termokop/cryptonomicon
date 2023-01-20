@@ -8,6 +8,23 @@ const socket = new WebSocket(
 
 const AGREGATE_INDEX = "5"
 
+//sharedWorker----------------------------------
+
+let worker = new SharedWorker("worker.js");
+let port = worker.port;
+port.start();
+port.onmessage = (e) => {
+    console.log( e.data.counter);
+}
+
+
+function incrementCounter(msg) {
+    port.postMessage(msg);
+    console.log(msg)
+  }
+
+//sharedWorker----------------------------------
+
 socket.addEventListener("message", e => {
     const {TYPE: type, FROMSYMBOL: currency, PRICE: newPrice} = JSON.parse(e.data)
     if(type !== AGREGATE_INDEX || newPrice === undefined) return
@@ -15,7 +32,11 @@ socket.addEventListener("message", e => {
     
     const handlers = tickersHandlers.get(currency) ?? []
     handlers.forEach(fn => fn(newPrice))
+
+    incrementCounter(JSON.parse(e.data).PRICE) //sharedWorker----------------------------------
 })
+
+
 
 
 function sendToWs(message) {
@@ -57,9 +78,4 @@ export const subscribeToTicker = (ticker,cb) => {
 export const unsubscribeFromTicker = /*(*/ticker /*, cb)*/ => {
     tickersHandlers.delete(ticker)
     ussubscribeFromTickerOnWs(ticker)
-    // const subscribers = tickersHandlers.get(ticker) || []
-    // tickersHandlers.set(
-    //     ticker,
-    //     subscribers.filter(fn => fn !== cb)
-    // )
 }
