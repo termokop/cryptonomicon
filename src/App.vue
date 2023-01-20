@@ -196,8 +196,11 @@ export default {
       this.tickers
       .filter(t => t.name === tickerName)  
       .forEach(t => {
-          t.price = price
-        })
+        if(t === this.selected) {
+          this.graph.push(price)
+        }
+        t.price = price
+      })
     }, 
     formatPrice(price) {
       if(price === "-") return price
