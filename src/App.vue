@@ -129,9 +129,12 @@
       <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
         {{ selected.name }} - USD
       </h3>
-      <div class="flex items-end border-gray-600 border-b border-l h-64">
+      <div 
+        class="flex items-end border-gray-600 border-b border-l h-64" 
+        ref="graph">
         <div
           v-for="(bar, index) in normalizedGraph"
+          ref="grahElement"
           :key="index"
           :style="{height: `${bar}%`}"
           class="bg-purple-800 border w-10"
@@ -183,28 +186,41 @@ export default {
       invalidTickers,
       ticker: '',
       isTickerExist: false,
-      isShowLoader: false,
-      selected: null,
       tickers: [],
+
+      isShowLoader: false,
+
+      selected: null,
       graph: [],
+      maxGraphElems: 1,
+      widthFraphElement: 1,
+
       coin_list: [],
       hints: [],
+
       page: 1,
       filter: "",
-
-      worker: null,
-      port: null,
-      counter: 0
     }
   },
   methods: {
-
+    calculateMaxGraphElements() {
+      if(!this.$refs.graph) return
+      this.maxGraphElems = this.$refs.graph.clientWidth / this.widthFraphElement
+      while(this.graph.length > this.maxGraphElems) {
+            this.graph.shift()
+      }
+    },
     updateTicker(tickerName, price) {
       this.tickers
       .filter(t => t.name === tickerName)  
       .forEach(t => {
         if(t === this.selected) {
           this.graph.push(price)
+          if(this.graph.length > this.maxGraphElems) {
+            this.graph.shift()
+          }
+          this.widthFraphElement = this.$refs.grahElement ? this.$refs.grahElement[0].clientWidth : 0
+          this.calculateMaxGraphElements()
         }
         t.price = price
       })
@@ -214,17 +230,6 @@ export default {
       return price > 1 ? price.toFixed(2) : price.toPrecision(2)
     },
 
-    async updateTickers() {
-      // if(!this.tickers.length) return
-
-      // const exchangeData = await loadTickers(this.tickers.map(t => t.name))
-
-      // this.tickers.forEach(ticker => {
-      //   const price = exchangeData[ticker.name.toUpperCase()] //-------------------------------- чи потрібен цей код?!
-
-      //   ticker.price = price ?? "-"
-      // })
-    },
     add() {
       const isExist = this.tickers.filter(el => el.name === this.ticker)
       if(isExist.length) {
@@ -254,7 +259,7 @@ export default {
       unsubscribeFromTicker(t.name)
     },
     select(t) {
-      this.selected = t
+      this.selected = t      
     },
     choose_hint(hint) {
       this.ticker = hint
@@ -345,7 +350,10 @@ export default {
     takeCoinList()
   },
   mounted() {
-
+    window.addEventListener("resize", this.calculateMaxGraphElements)
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.calculateMaxGraphElements)
   },
   watch: {
     tickers() {
