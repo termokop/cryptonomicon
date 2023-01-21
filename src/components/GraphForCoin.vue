@@ -101,7 +101,7 @@ export default {
             handler(val) {
                 if(val.length >0) {
                   this.graph.push(val.slice(-1))
-                  console.log(val)
+                  // console.log(val)
                   this.calculateMaxGraphElements()
                 } else {
                   this.graph = []

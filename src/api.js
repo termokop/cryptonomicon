@@ -2,7 +2,7 @@ let tickersHandlers = new Map()
 
 export let invalidTickers = []
 
-let copiedData = 'a' // some string to compire with "price"
+let copiedData = '' // some string to compire with "price"
 
 let sharedWorker = new SharedWorker('./worker.js');
 sharedWorker.port.onmessage = function(e) { 
@@ -15,7 +15,7 @@ sharedWorker.port.onmessage = function(e) {
     } else {
         invalidTickers.push(e.data.currency)
     }
-    console.log(e.data)
+    // console.log(e.data)
 };
 
 

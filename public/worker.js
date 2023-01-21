@@ -51,7 +51,7 @@ self.onconnect = function(e) {
     if(e.data.act === "unsubcribe") {
       if(e.data.ticker !== "BTC") {
         ussubscribeFromTickerOnWs(e.data.ticker)
-        tickersArr.filter(t => t !== e.data.ticker)
+        tickersArr = tickersArr.filter(t => t !== e.data.ticker)
       }
     }
 
