@@ -90,7 +90,8 @@
           :key="t"
           @click="select(t)"
           :class="{
-            'border-4': selected === t
+            'border-4': selected === t,
+            'bg-red-100': invalidTickers.includes(t.name)
           }"
           class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
         >
@@ -172,13 +173,14 @@
 
 <script>
 
-import {subscribeToTicker, unsubscribeFromTicker } from './api'
+import {subscribeToTicker, unsubscribeFromTicker, invalidTickers } from './api'
 
 
 export default {
   name: 'App',
   data() {
     return {
+      invalidTickers,
       ticker: '',
       isTickerExist: false,
       isShowLoader: false,
