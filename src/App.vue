@@ -48,9 +48,10 @@
           @click="select(t)"
           :class="{
             'border-4': selected === t,
-            'bg-red-100': invalidTickers.includes(t.name)
+            'bg-red-100': invalidTickers.includes(t.name),
+            'bg-white': !invalidTickers.includes(t.name)
           }"
-          class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+          class=" overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
         >
           <div class="px-4 py-5 sm:p-6 text-center">
             <dt class="text-sm font-medium text-gray-500 truncate">
@@ -212,7 +213,6 @@ export default {
         subscribeToTicker(ticker.name, newPrice => this.updateTicker(ticker.name, newPrice))
       })
     }
-    // setInterval(this.updateTickers, 5000)
 
     const takeCoinList = async() => {
             this.isShowLoader = true
@@ -245,7 +245,7 @@ export default {
         `${window.location.pathname}?filter=${v.filter}&page=${v.page}`
       )
     }
-  }
+  },
 }
 </script>
 

@@ -13,6 +13,7 @@ sharedWorker.port.onmessage = function(e) {
         const handlers = tickersHandlers.get(e.data.currency) ?? []
         handlers.forEach(fn => fn(e.data.newPrice))
     } else {
+        if(!invalidTickers.includes(e.data.currency))
         invalidTickers.push(e.data.currency)
     }
     // console.log(e.data)
