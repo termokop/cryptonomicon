@@ -134,9 +134,6 @@ export default {
       .forEach(t => {
         if(t === this.selected) {
           this.graph.push(price)
-          if(this.graph.length > this.maxGraphElems) {
-            this.graph.shift()
-          }
         }
         t.price = price
       })
