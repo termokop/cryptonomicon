@@ -3,7 +3,7 @@
       <div class="flex">
         <div class="max-w-xs">
           <label for="wallet" class="block text-sm font-medium text-gray-700"
-            >Тикер</label
+            >Ticker</label
           >
           <div class="mt-1 relative rounded-md shadow-md">
             <input
@@ -14,7 +14,7 @@
               id="wallet"
               v-model="ticker"
               class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-              placeholder="Например DOGE"
+              placeholder="Example: DOGE"
             />
           </div>
           <div v-if="hints.length" class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
@@ -35,7 +35,7 @@
         class="my-4"
         :disabled="disabled"
       >
-        Добавить
+        Add
       </add-btn>
     </section>
 </template>
